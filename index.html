@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tempo!</title>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/minstyle.io@2.0.2/dist/css/minstyle.io.min.css">
+  </head>
+  <body>
+    <div class="container">
+        <h1 class="ms-text-center">Tempo!</h1>
+        <div class="row">
+          <div class="col-sm"></div>
+          <div class="col-sm">
+            <div class="ms-form-group">
+                <input class="ms-large ms-text-center" type="number" value="100" id="bpm" />
+              </div>
+              <div class="ms-form-group">
+                <label for="select">Beats per Bar</label>
+                <select value="4" id="bpb">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                </select>
+            </div>
+              <div><button id="play" class="ms-btn ms-large ms-secondary ms-fullwidth">Play</button></div>
+              <br>
+              <div><button id="stop" class="ms-btn ms-large ms-primary ms-fullwidth">Stop</button></div>
+          </div>
+          <div class="col-sm"></div>
+        </div>
+      </div>
+      <script>
+        ;(function (window, document, undefined) {
+            "use strict";
+
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const context = new AudioContext();
+            let metronome_interval;
+            let ticks = 0;
+
+            const beep = (duration, pitch, finished_callback) => {
+                const oscillator = context.createOscillator();
+                oscillator.type = 'sine';
+                oscillator.frequency.value = pitch === "TICK" ? 880 : 440;
+                oscillator.connect(context.destination);
+                oscillator.start();
+                oscillator.stop(context.currentTime + duration);
+
+                if (typeof finished_callback === "function") {
+                    oscillator.onended = finished_callback;
+                }
+            }
+
+            const start_metronome = (bpm, bpb) => {
+                ticks = 0;
+                const interval = (60 / bpm) * 1000;
+                metronome_interval = setInterval(() => {
+                    beep(0.1, ticks === 0 ? "TICK" : "TOCK");
+                    ticks = (ticks + 1) % bpb;
+                }, interval);
+            };
+
+            const handle_click = (event) => {
+                if (event.target.id === "play") {
+                    clearInterval(metronome_interval); // Stop any ongoing beat
+                    const bpm = parseInt(document.getElementById("bpm").value, 10);
+                    const bpb = parseInt(document.getElementById("bpb").value, 10);
+                    start_metronome(bpm, bpb);
+                } else if (event.target.id === "stop") {
+                    clearInterval(metronome_interval);
+                }
+            };
+
+            const check_url_parameters = () => {
+                const params = new URLSearchParams(window.location.search);
+                let bpm = params.get("bpm");
+                let bpb = params.get("bpb") || 4;
+
+                const path = window.location.pathname.split("/").filter(Boolean);
+                if (path.length) {
+                    bpm = path[0];
+                    bpb = path[1] || 4;
+                }
+
+                if (bpm) {
+                    document.getElementById("bpm").value = bpm;
+                    document.getElementById("bpb").value = bpb;
+                    const user_confirmation = window.confirm(`Play tempo of ${bpm}?`);
+                    if (user_confirmation) {
+                        start_metronome(bpm, bpb);
+                    }
+                }
+            };
+
+            const init_functions = () => {
+                document.addEventListener("click", handle_click);
+                check_url_parameters();
+            };
+
+            document.addEventListener("DOMContentLoaded", init_functions);
+        })(window, document);
+    </script>
+</div>
+</body>
+
+</html>
