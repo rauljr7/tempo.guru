@@ -40,18 +40,25 @@
         ;(function (window, document, undefined) {
             "use strict";
 
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            const context = new AudioContext();
             let metronome_interval;
             let ticks = 0;
+            let context;
+
+            function getAudioContext() {
+                if (!context) {
+                    context = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                return context;
+            }
 
             const beep = (duration, pitch, finished_callback) => {
-                const oscillator = context.createOscillator();
+                const audioContext = getAudioContext();
+                const oscillator = audioContext.createOscillator();
                 oscillator.type = 'sine';
                 oscillator.frequency.value = pitch === "TICK" ? 880 : 440;
-                oscillator.connect(context.destination);
+                oscillator.connect(audioContext.destination);
                 oscillator.start();
-                oscillator.stop(context.currentTime + duration);
+                oscillator.stop(audioContext.currentTime + duration);
 
                 if (typeof finished_callback === "function") {
                     oscillator.onended = finished_callback;
