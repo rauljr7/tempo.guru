@@ -78,7 +78,7 @@
                 }
             };
 
-            const check_url_parameters = () => {
+            const set_url_parameters = () => {
                 const params = new URLSearchParams(window.location.search);
                 let bpm = params.get("bpm");
                 let bpb = params.get("bpb") || 4;
@@ -92,16 +92,12 @@
                 if (bpm) {
                     document.getElementById("bpm").value = bpm;
                     document.getElementById("bpb").value = bpb;
-                    const user_confirmation = window.confirm(`Play tempo of ${bpm}?`);
-                    if (user_confirmation) {
-                        start_metronome(bpm, bpb);
-                    }
                 }
             };
 
             const init_functions = () => {
                 document.addEventListener("click", handle_click);
-                check_url_parameters();
+                set_url_parameters();
             };
 
             document.addEventListener("DOMContentLoaded", init_functions);
