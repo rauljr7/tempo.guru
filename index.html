@@ -39,32 +39,49 @@
       <script>
         ;(function (window, document, undefined) {
             "use strict";
-
+        
             let metronome_interval;
             let ticks = 0;
             let context;
-
-            function getAudioContext() {
+        
+            function get_audio_context() {
                 if (!context) {
                     context = new (window.AudioContext || window.webkitAudioContext)();
                 }
                 return context;
             }
-
+        
+            function unlock_audio_context(audioContext) {
+                if (audioContext.state === 'suspended') {
+                    const buffer = audioContext.createBuffer(1, 1, 22050);
+                    const source = audioContext.createBufferSource();
+                    source.buffer = buffer;
+                    source.connect(audioContext.destination);
+                    source.start(0);
+                    audioContext.resume().then(() => {
+                        document.body.removeEventListener('touchstart', unlock_audio_context);
+                        document.body.removeEventListener('touchend', unlock_audio_context);
+                    });
+                }
+            }
+        
+            document.body.addEventListener('touchstart', function() { unlock_audio_context(get_audio_context()); });
+            document.body.addEventListener('touchend', function() { unlock_audio_context(get_audio_context()); });
+        
             const beep = (duration, pitch, finished_callback) => {
-                const audioContext = getAudioContext();
+                const audioContext = get_audio_context();
                 const oscillator = audioContext.createOscillator();
                 oscillator.type = 'sine';
                 oscillator.frequency.value = pitch === "TICK" ? 880 : 440;
                 oscillator.connect(audioContext.destination);
                 oscillator.start();
                 oscillator.stop(audioContext.currentTime + duration);
-
+        
                 if (typeof finished_callback === "function") {
                     oscillator.onended = finished_callback;
                 }
             }
-
+        
             const start_metronome = (bpm, bpb) => {
                 ticks = 0;
                 const interval = (60 / bpm) * 1000;
@@ -73,40 +90,41 @@
                     ticks = (ticks + 1) % bpb;
                 }, interval);
             };
-
+        
             const handle_click = (event) => {
                 if (event.target.id === "play") {
                     clearInterval(metronome_interval); // Stop any ongoing beat
                     const bpm = parseInt(document.getElementById("bpm").value, 10);
                     const bpb = parseInt(document.getElementById("bpb").value, 10);
+                    get_audio_context().resume();  // Add this line
                     start_metronome(bpm, bpb);
                 } else if (event.target.id === "stop") {
                     clearInterval(metronome_interval);
                 }
             };
-
+        
             const set_url_parameters = () => {
                 const params = new URLSearchParams(window.location.search);
                 let bpm = params.get("bpm");
                 let bpb = params.get("bpb") || 4;
-
+        
                 const path = window.location.pathname.split("/").filter(Boolean);
                 if (path.length) {
                     bpm = path[0];
                     bpb = path[1] || 4;
                 }
-
+        
                 if (bpm) {
                     document.getElementById("bpm").value = bpm;
                     document.getElementById("bpb").value = bpb;
                 }
             };
-
+        
             const init_functions = () => {
                 document.addEventListener("click", handle_click);
                 set_url_parameters();
             };
-
+        
             document.addEventListener("DOMContentLoaded", init_functions);
         })(window, document);
     </script>
